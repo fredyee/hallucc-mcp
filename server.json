@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.fredyee/hallucc",
+  "description": "HallucC: hallucination detection & AI safety gateway — verify_text (claim-level fact check with citations), verify_agent (agent output + trajectory audit), check_cua_actions (computer-use action risk gating L0-L3), check_safety (OWASP LLM Top 10 prompt-injection / jailbreak / harmful-content screening). Bring your own HallucC API key (Authorization: Bearer); quota shared with the aihcc.cloud web dashboard.",
+  "title": "HallucC — Hallucination & Safety Guardian",
+  "version": "0.1.0",
+  "websiteUrl": "https://aihcc.cloud",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://aihcc.cloud/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer <你的 HallucC API key>（在 https://aihcc.cloud 注册后于 /keys 页创建；免费套餐每日有额度）",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
