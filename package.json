@@ -1,6 +1,6 @@
 {
   "name": "hallucc-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "HallucC MCP server — thin proxy to the HallucC detection backend (verify_text / verify_agent / check_cua_actions / check_safety).",
   "type": "module",
   "private": true,
