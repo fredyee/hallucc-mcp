@@ -1,23 +1,38 @@
 # HallucC MCP Server
 
-把 HallucC 的检测能力以 **MCP（Model Context Protocol）** 工具暴露给 Claude / Cursor / Claude Desktop 等客户端，零配置接入。
+**[English](./README_EN.md)** ｜ [在线体验](https://aihcc.cloud) ｜ [官方 MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=hallucc) ｜ [魔搭 MCP 广场](https://modelscope.cn/mcp/servers/hallucC/hallucc) ｜ [Coze 商店](https://www.coze.cn/store/agent/7685683870800494628)
 
-**架构：薄代理（thin proxy）**——本服务用官方 `@modelcontextprotocol/sdk` (TypeScript) 实现，**不复制任何检测逻辑**，只把客户端请求原样转发到现有 HallucC FastAPI 后端（`server.py` @ :8001）。鉴权走每用户 API key，额度与 Web 端同源（同一 key = 同一账号额度）。
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-blue)](https://registry.modelcontextprotocol.io/v0/servers?search=hallucc)
+[![ModelScope](https://img.shields.io/badge/ModelScope-MCP%E5%B9%BF%E5%9C%BA-624aff)](https://modelscope.cn/mcp/servers/hallucC/hallucc)
+[![Coze](https://img.shields.io/badge/Coze-%E6%99%BA%E8%83%BD%E4%BD%93%E5%95%86%E5%BA%97-4d6bfe)](https://www.coze.cn/store/agent/7685683870800494628)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
+> 给 AI 装上「事实核验 + 安全网关」：逐声明幻觉检测、Agent 轨迹六维评估、CUA 动作 L0-L3 风险分级、40+ 特征注入/越狱拦截——一个 MCP server，四个工具，接入 Claude Code / Cursor / Claude Desktop。
+
+## 零注册，先看真实效果
+
+- 🔍 真实检测结果示例（含逐句标注 + 置信度 + 来源链接）：https://aihcc.cloud/r/GttouoJfMpkC
+- 🛡️ CUA 动作分级在线体验（纯规则，不耗额度）：https://aihcc.cloud/cua
+- 📝 网页版检测（免费额度 2 次/天）：https://aihcc.cloud
+
+<!-- TODO: 补演示 GIF（建议 15 秒内：verify_text 标注 before→after，或 check_cua_actions 拦截 rm -rf 瞬间）
+![demo](./docs/demo.gif)
+-->
 
 ## 工具集（4 个）
 
-| 工具 | 后端端点 | 作用 | 耗额度 |
-|---|---|---|---|
-| `verify_text` | `POST /detect` | 逐声明幻觉核验：返回红/黄/绿汇总 + 每条声明 status/confidence/reason/**sources** + citations | ✅ detect |
-| `verify_agent` | `POST /detect-agent` | agent 最终输出文本级核验 + 执行轨迹六维评估（事实性/来源/指令合规/工具声明一致/任务完成/反思） | ✅ detect |
-| `check_cua_actions` | `POST /cua/classify` | Computer-Use Agent 动作风险分级 L0-L3（纯规则，无 LLM） | ❌ 不耗 |
-| `check_safety` | `POST /guard/check`（`fast=true` → `/guard/check-fast`） | 40+ 特征安全网关：Prompt 注入 / 越狱 / 有害内容 / 敏感信息泄露 / 欺诈 | ✅ detect |
+| 工具                | 后端端点                                                 | 作用                                                         | 耗额度   |
+| ------------------- | -------------------------------------------------------- | ------------------------------------------------------------ | -------- |
+| `verify_text`       | `POST /detect`                                           | 逐声明幻觉核验：返回红/黄/绿汇总 + 每条声明 status/confidence/reason/**sources** + citations | ✅ detect |
+| `verify_agent`      | `POST /detect-agent`                                     | agent 最终输出文本级核验 + 执行轨迹六维评估（事实性/来源/指令合规/工具声明一致/任务完成/反思） | ✅ detect |
+| `check_cua_actions` | `POST /cua/classify`                                     | Computer-Use Agent 动作风险分级 L0-L3（纯规则，无 LLM）      | ❌ 不耗   |
+| `check_safety`      | `POST /guard/check`（`fast=true` → `/guard/check-fast`） | 40+ 特征安全网关：Prompt 注入 / 越狱 / 有害内容 / 敏感信息泄露 / 欺诈 | ✅ detect |
 
 > 鉴权模型：客户端在各自机器配 `Authorization: Bearer <你的 HallucC API key>` 头 → server 提取并**原样透传**到后端 → 后端校验 + 扣同一账号额度。key 只在 HTTP 头里流转，**不进工具参数、不进模型 transcript**。
 
 ## 公网接入（推荐，无需本地运行）
 
-MCP server 已部署在 `https://aihcc.cloud/mcp`（nginx → 本机 8787，TLS 由 nginx 终止）。客户端直接配公网地址 + 个人 API key 即可：
+MCP server 已部署在 `https://aihcc.cloud/mcp`（remote，streamable-http）。客户端直接配公网地址 + 个人 API key 即可：
 
 ```bash
 # Claude Code
@@ -63,6 +78,7 @@ claude mcp list
 ### Cursor
 
 `Settings → MCP → Add MCP server`：
+
 - Type: `http`
 - URL: `http://127.0.0.1:8787/mcp`
 - Headers: `{"Authorization": "Bearer <你的 HallucC API key>"}`
@@ -117,3 +133,13 @@ src/
 ## 传输
 
 Streamable HTTP（当前 MCP 规范推荐的 remote 传输，即「HTTP+SSE」），**stateless** 模式：每个 POST 新建 transport + McpServer，处理完即关。Claude Code / Cursor / Claude Desktop 均原生支持。后续若要兼容只认旧版 SSE 的客户端，加 `SSEServerTransport`（双端点 `/sse` + `/messages`）即可。
+
+## 收录与生态
+
+- ✅ 官方 MCP Registry：`io.github.fredyee/hallucc` v0.1.1（active）
+- ✅ 魔搭 MCP 广场：[@hallucC/hallucc](https://modelscope.cn/mcp/servers/hallucC/hallucc)
+- ✅ 扣子 Coze 商店：[HallucC 事实核查助手](https://www.coze.cn/store/agent/7685683870800494628)
+
+## License
+
+[MIT](./LICENSE)
