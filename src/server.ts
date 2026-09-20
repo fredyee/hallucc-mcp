@@ -8,17 +8,13 @@
  * 到后端 → 后端校验 + 扣同一账号额度（与 Web 仪表盘同源）。key 不进工具参数、不进模型
  * transcript。无 key / 错 key → 401；额度用完 → 后端 429（映射成可读错误）。
  */
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import type { Response } from "express";
 
 import { loadConfig, extractApiKey } from "./context.js";
-import { BackendClient } from "./backend.js";
-import { registerAllTools } from "./tools/index.js";
-
-const SERVER_NAME = "hallucc-mcp";
-const SERVER_VERSION = "0.1.0";
+import { buildServer, SERVER_NAME, SERVER_VERSION } from "./mcpServer.js";
+import { LANDING_PAGE } from "./landing.js";
 
 const cfg = loadConfig();
 
@@ -28,17 +24,6 @@ function jsonrpcError(res: Response, httpStatus: number, code: number, message: 
   res
     .status(httpStatus)
     .json({ jsonrpc: "2.0", error: { code, message }, id: null });
-}
-
-/** 每请求构造一个 McpServer，工具闭包绑定该请求的 key 对应的 BackendClient。 */
-function buildServer(apiKey: string): McpServer {
-  const server = new McpServer(
-    { name: SERVER_NAME, version: SERVER_VERSION },
-    { capabilities: { logging: {} } },
-  );
-  const backend = new BackendClient(cfg, apiKey);
-  registerAllTools(server, backend);
-  return server;
 }
 
 // allowedHosts：放行公网域名（nginx 反代转发 Host: aihcc.cloud）+ 本机调试。
@@ -61,7 +46,7 @@ app.post("/mcp", async (req, res) => {
     return;
   }
 
-  const server = buildServer(apiKey);
+  const server = buildServer(cfg, apiKey);
   try {
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     transport.onerror = (err: Error) => {
@@ -84,8 +69,13 @@ app.post("/mcp", async (req, res) => {
   }
 });
 
-app.get("/mcp", async (_req, res) => {
-  // stateless 模式不维护会话，不支持 GET 长连接 SSE。
+app.get("/mcp", async (req, res) => {
+  // 浏览器直接打开 → 友好落地页（转化闭环：给 endpoint 页面一个可读的下一步）。
+  // MCP 客户端（Accept 不含 text/html）→ 仍按协议返回 405（stateless 不支持 GET/SSE）。
+  if (req.accepts(["text/html", "application/json"]) === "text/html") {
+    res.status(200).type("html").send(LANDING_PAGE);
+    return;
+  }
   res.writeHead(405).end(
     JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed (stateless server)." }, id: null }),
   );

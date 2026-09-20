@@ -3,6 +3,7 @@
 **[English](./README_EN.md)** ｜ [在线体验](https://aihcc.cloud) ｜ [官方 MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=hallucc) ｜ [魔搭 MCP 广场](https://modelscope.cn/mcp/servers/hallucC/hallucc) ｜ [Coze 商店](https://www.coze.cn/store/agent/7685683870800494628)
 
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-blue)](https://registry.modelcontextprotocol.io/v0/servers?search=hallucc)
+[![npm](https://img.shields.io/npm/v/hallucc-mcp)](https://www.npmjs.com/package/hallucc-mcp)
 [![ModelScope](https://img.shields.io/badge/ModelScope-MCP%E5%B9%BF%E5%9C%BA-624aff)](https://modelscope.cn/mcp/servers/hallucC/hallucc)
 [![Coze](https://img.shields.io/badge/Coze-%E6%99%BA%E8%83%BD%E4%BD%93%E5%95%86%E5%BA%97-4d6bfe)](https://www.coze.cn/store/agent/7685683870800494628)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -15,9 +16,6 @@
 - 🛡️ CUA 动作分级在线体验（纯规则，不耗额度）：https://aihcc.cloud/cua
 - 📝 网页版检测（免费额度 2 次/天）：https://aihcc.cloud
 
-<!-- TODO: 补演示 GIF（建议 15 秒内：verify_text 标注 before→after，或 check_cua_actions 拦截 rm -rf 瞬间）
-![demo](./docs/demo.gif)
--->
 
 ## 工具集（4 个）
 
@@ -42,7 +40,23 @@ claude mcp add --transport http hallucc https://aihcc.cloud/mcp \
 
 Cursor / Claude Desktop 同理，URL 填 `https://aihcc.cloud/mcp`，Headers 加 `Authorization: Bearer <key>`。API key 在 https://aihcc.cloud 注册后于 /keys 页创建，免费套餐每日有额度。
 
-## 本地运行
+### 或：npx 本地运行（stdio，无需 clone）
+
+```json
+{
+  "mcpServers": {
+    "hallucc": {
+      "command": "npx",
+      "args": ["-y", "hallucc-mcp"],
+      "env": { "HALLUCC_API_KEY": "<你的 HallucC API key>" }
+    }
+  }
+}
+```
+
+同一套工具，走 stdio 传输，key 从环境变量读取，默认连公网后端 `https://aihcc.cloud`。
+
+## 本地运行（源码开发）
 
 ```bash
 # 1. 装依赖（已装可跳过）
