@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.fredyee/hallucc",
   "title": "HallucC — Hallucination & Safety Guardian",
-  "description": "Hallucination & safety checks for LLM/Agent outputs: claim-level fact-check with citations.",
+  "description": "Hallucination & safety checks for LLM/Agent outputs: claim-level fact-check with citations. Before use, register at https://aihcc.cloud and create an API key at /keys (free daily quota). The Authorization header requires Bearer <your API key>.",
   "version": "0.1.1",
   "websiteUrl": "https://aihcc.cloud",
   "repository": {
