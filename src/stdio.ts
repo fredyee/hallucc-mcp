@@ -4,7 +4,7 @@
  *
  * 与 server.ts（remote HTTP）同一套工具，区别只在传输与 key 来源：
  * key 从环境变量 HALLUCC_API_KEY 读（客户端 mcp.json 的 env 字段注入），
- * 后端默认指向公网 https://aihcc.cloud（可用 HALLUCC_BASE_URL 覆盖）。
+ * 后端默认指向公网 https://aihcc.cloud/api（可用 HALLUCC_BASE_URL 覆盖）。
  *
  * mcp.json 配置示例：
  *   "hallucc": {
@@ -29,9 +29,10 @@ if (!apiKey) {
 }
 
 // stdio 模式默认打公网后端（npx 用户本机没有 127.0.0.1:8001）。
+// 注意：公网 API 必须带 /api 前缀（nginx 仅代理 /api/ 到后端，其余路径落前端）。
 const cfg = {
   ...loadConfig(),
-  baseUrl: (process.env.HALLUCC_BASE_URL ?? "https://aihcc.cloud").replace(/\/+$/, ""),
+  baseUrl: (process.env.HALLUCC_BASE_URL ?? "https://aihcc.cloud/api").replace(/\/+$/, ""),
 };
 
 const server = buildServer(cfg, apiKey);
