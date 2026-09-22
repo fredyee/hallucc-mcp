@@ -3,7 +3,7 @@
   "name": "io.github.fredyee/hallucc",
   "title": "HallucC — Hallucination & Safety Guardian",
   "description": "Fact-check LLM outputs with cited sources. API key: aihcc.cloud/keys.",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "websiteUrl": "https://aihcc.cloud",
   "repository": {
     "source": "github",

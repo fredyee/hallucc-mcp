@@ -12,6 +12,13 @@
  *     "args": ["-y", "hallucc-mcp"],
  *     "env": { "HALLUCC_API_KEY": "<你的 HallucC API key>" }
  *   }
+ *
+ * 设计说明（重要）：
+ *   进程在「未提供 key」时也要能正常启动。工具列表（tools/list）与 schema 内省
+ *   不需要鉴权，目录站/评估器（如 Glama 的容器检查）会在无密钥环境下拉起本进程，
+ *   若此处在启动阶段 process.exit(1) 会导致连接被立即关闭（Connection closed），
+ *   评估失败。故无 key 时只打印提示、继续启动；真正的核验类工具调用由
+ *   BackendClient 返回可读的 401 错误。
  */
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
@@ -20,12 +27,14 @@ import { buildServer, SERVER_NAME, SERVER_VERSION } from "./mcpServer.js";
 
 const apiKey = process.env.HALLUCC_API_KEY?.trim();
 if (!apiKey) {
+  // 不再 exit(1)：允许「无鉴权」启动，便于工具列表/内省与目录站评估。
   console.error(
-    "[hallucc-mcp] 缺少 HALLUCC_API_KEY 环境变量。\n" +
-      "在 https://aihcc.cloud/keys 创建 key，并在客户端 mcp.json 的 env 里配置：\n" +
+    "[hallucc-mcp] 未检测到 HALLUCC_API_KEY：将以「未鉴权」模式启动。" +
+      "工具列表可用，但调用核验类工具会返回 401。\n" +
+      "正式使用请在客户端 mcp.json 的 env 中配置 HALLUCC_API_KEY" +
+      "（在 https://aihcc.cloud/keys 创建）：\n" +
       '  "env": { "HALLUCC_API_KEY": "<你的 HallucC API key>" }',
   );
-  process.exit(1);
 }
 
 // stdio 模式默认打公网后端（npx 用户本机没有 127.0.0.1:8001）。
@@ -35,7 +44,7 @@ const cfg = {
   baseUrl: (process.env.HALLUCC_BASE_URL ?? "https://aihcc.cloud/api").replace(/\/+$/, ""),
 };
 
-const server = buildServer(cfg, apiKey);
+const server = buildServer(cfg, apiKey ?? "");
 const transport = new StdioServerTransport();
 await server.connect(transport);
 console.error(`[${SERVER_NAME}] v${SERVER_VERSION} stdio 就绪 → 后端 ${cfg.baseUrl}`);
