@@ -52,7 +52,11 @@ Cursor / Claude Desktop work the same way: URL `https://aihcc.cloud/mcp`, header
 }
 ```
 
-Same four tools over stdio transport; the key comes from the environment and requests default to the hosted backend `https://aihcc.cloud`.
+Same four tools over stdio transport; the key comes from the environment and requests default to the hosted backend `https://aihcc.cloud/api`.
+
+> **The base URL must keep the `/api` prefix**: nginx only proxies `/api/` to the backend. A bare
+> `https://aihcc.cloud` reaches the frontend instead — the request returns 200 with an HTML body,
+> fails silently (nothing lands in audit or in a fallback file), and the audit replay stays empty.
 
 ## Run locally (from source)
 

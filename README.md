@@ -54,7 +54,10 @@ Cursor / Claude Desktop 同理，URL 填 `https://aihcc.cloud/mcp`，Headers 加
 }
 ```
 
-同一套工具，走 stdio 传输，key 从环境变量读取，默认连公网后端 `https://aihcc.cloud`。
+同一套工具，走 stdio 传输，key 从环境变量读取，默认连公网后端 `https://aihcc.cloud/api`。
+
+> **base 必须带 `/api` 前缀**：nginx 只把 `/api/` 代理到后端。填裸域名 `https://aihcc.cloud` 会打到前端页面，
+> 返回 200 但 body 是 HTML——请求静默失败（审计不落库、不落兜底文件），审计回放里看不到任何记录。
 
 ## 本地运行（源码开发）
 
