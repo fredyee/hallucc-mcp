@@ -100,3 +100,30 @@ export const checkSafetySchema = {
     .optional()
     .describe("true 走纯规则快速模式（<10ms，无 LLM）→ /guard/check-fast；默认 false 走完整 /guard/check"),
 };
+
+/** 5. check_cua_code_audit → POST /cua/audit-code：Agent 源码静态审计（纯规则，不耗额度）。 */
+export const checkCuaCodeAuditSchema = {
+  code: z
+    .string()
+    .max(50000)
+    .optional()
+    .describe("单文件模式：要扫描的源代码文本（≤50000 字符），与 files 二选一"),
+  filename: z
+    .string()
+    .optional()
+    .describe("单文件模式：文件名，用于报告中标识（默认 input.py）"),
+  language: z
+    .enum(["auto", "python", "javascript", "typescript"])
+    .optional()
+    .describe("语言提示，auto 时按 filename 扩展名推断（默认 auto）"),
+  files: z
+    .array(
+      z.object({
+        path: z.string().min(1),
+        content: z.string().max(50000),
+        language: z.enum(["auto", "python", "javascript", "typescript"]).optional(),
+      }),
+    )
+    .optional()
+    .describe("多文件模式：[{path, content, language?}] 数组，与 code 二选一"),
+};

@@ -9,7 +9,7 @@ import { BackendClient } from "./backend.js";
 import { registerAllTools } from "./tools/index.js";
 
 export const SERVER_NAME = "hallucc-mcp";
-export const SERVER_VERSION = "0.1.4";
+export const SERVER_VERSION = "0.1.5";
 
 export function buildServer(cfg: ServerConfig, apiKey: string): McpServer {
   const server = new McpServer(

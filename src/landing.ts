@@ -28,7 +28,7 @@ export const LANDING_PAGE = /* html */ `<!DOCTYPE html>
 </head>
 <body>
 <h1>HallucC MCP Endpoint <span class="badge">● online</span></h1>
-<p class="muted">Claim-by-claim AI hallucination detection with sources &middot; agent trajectory verification &middot; L0–L3 risk gating for Computer-Use actions &middot; prompt-injection / jailbreak guard.</p>
+<p class="muted">Claim-by-claim AI hallucination detection with sources &middot; agent trajectory verification &middot; L0–L3 risk gating for Computer-Use actions &middot; Agent source code static audit &middot; prompt-injection / jailbreak guard.</p>
 
 <p>This URL is a <strong>Model Context Protocol</strong> endpoint (Streamable HTTP). It is meant for MCP clients, not browsers — point your client at it:</p>
 <p class="endpoint"><code>https://aihcc.cloud/mcp</code></p>
@@ -65,6 +65,7 @@ export const LANDING_PAGE = /* html */ `<!DOCTYPE html>
   <li><code>verify_text</code> — claim-by-claim hallucination check with cited sources</li>
   <li><code>verify_agent</code> — verify an agent's tool-call trajectory</li>
   <li><code>check_cua_actions</code> — L0–L3 risk gating before Computer-Use actions execute</li>
+  <li><code>check_cua_code_audit</code> — static audit of Agent source code for dangerous patterns</li>
   <li><code>check_safety</code> — 40+ feature prompt-injection / jailbreak screen</li>
 </ul>
 

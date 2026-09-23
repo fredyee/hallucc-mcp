@@ -6,7 +6,7 @@
 [![npm](https://img.shields.io/npm/v/hallucc-mcp)](https://www.npmjs.com/package/hallucc-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> Give your AI a fact-checker and a safety gateway: claim-by-claim hallucination detection, agent trajectory evaluation, L0-L3 risk gating for Computer-Use Agent (CUA) actions, and a 40+ feature prompt-injection / jailbreak guard — one MCP server, four tools, works with Claude Code / Cursor / Claude Desktop.
+> Give your AI a fact-checker and a safety gateway: claim-by-claim hallucination detection, agent trajectory evaluation, L0-L3 risk gating for Computer-Use Agent (CUA) actions, Agent source code static audit, and a 40+ feature prompt-injection / jailbreak guard — one MCP server, five tools, works with Claude Code / Cursor / Claude Desktop.
 
 ## See it first — no sign-up required
 
@@ -22,6 +22,7 @@
 | `verify_text` | `POST /detect` | Claim-by-claim hallucination check: red/yellow/green summary + per-claim status/confidence/reason/**sources** + citations | ✅ detect |
 | `verify_agent` | `POST /detect-agent` | Text-level verification of an agent's final output + 6-dimension trajectory evaluation (factuality / sourcing / instruction compliance / tool-claim consistency / task completion / reflection) | ✅ detect |
 | `check_cua_actions` | `POST /cua/classify` | L0-L3 risk classification for Computer-Use Agent actions (pure rules, no LLM) | ❌ free |
+| `check_cua_code_audit` | `POST /cua/audit-code` | Static audit of Agent source code: dangerous imports / permission boundaries / injection surfaces / dangerous defaults / sandbox absence | ❌ free |
 | `check_safety` | `POST /guard/check` (`fast=true` → `/guard/check-fast`) | 40+ feature safety gateway: prompt injection / jailbreak / harmful content / PII leakage / fraud | ✅ detect |
 
 > Auth model: each client sends `Authorization: Bearer <your HallucC API key>` → the server forwards it **as-is** to the backend → the backend validates and deducts from the same account quota as the web app. Keys travel only in HTTP headers — **never in tool arguments, never in model transcripts**.
@@ -52,7 +53,7 @@ Cursor / Claude Desktop work the same way: URL `https://aihcc.cloud/mcp`, header
 }
 ```
 
-Same four tools over stdio transport; the key comes from the environment and requests default to the hosted backend `https://aihcc.cloud/api`.
+Same five tools over stdio transport; the key comes from the environment and requests default to the hosted backend `https://aihcc.cloud/api`.
 
 > **The base URL must keep the `/api` prefix**: nginx only proxies `/api/` to the backend. A bare
 > `https://aihcc.cloud` reaches the frontend instead — the request returns 200 with an HTML body,

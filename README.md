@@ -8,7 +8,7 @@
 [![Coze](https://img.shields.io/badge/Coze-%E6%99%BA%E8%83%BD%E4%BD%93%E5%95%86%E5%BA%97-4d6bfe)](https://www.coze.cn/store/agent/7685683870800494628)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> 给 AI 装上「事实核验 + 安全网关」：逐声明幻觉检测、Agent 轨迹六维评估、CUA 动作 L0-L3 风险分级、40+ 特征注入/越狱拦截——一个 MCP server，四个工具，接入 Claude Code / Cursor / Claude Desktop。
+> 给 AI 装上「事实核验 + 安全网关」：逐声明幻觉检测、Agent 轨迹六维评估、CUA 动作 L0-L3 风险分级、Agent 源码静态审计、40+ 特征注入/越狱拦截——一个 MCP server，五个工具，接入 Claude Code / Cursor / Claude Desktop。
 
 ## 零注册，先看真实效果
 
@@ -24,6 +24,7 @@
 | `verify_text`       | `POST /detect`                                           | 逐声明幻觉核验：返回红/黄/绿汇总 + 每条声明 status/confidence/reason/**sources** + citations | ✅ detect |
 | `verify_agent`      | `POST /detect-agent`                                     | agent 最终输出文本级核验 + 执行轨迹六维评估（事实性/来源/指令合规/工具声明一致/任务完成/反思） | ✅ detect |
 | `check_cua_actions` | `POST /cua/classify`                                     | Computer-Use Agent 动作风险分级 L0-L3（纯规则，无 LLM）      | ❌ 不耗   |
+| `check_cua_code_audit` | `POST /cua/audit-code`                                  | Agent 源码静态审计：危险导入 / 权限边界 / 注入面 / 危险默认值 / 沙箱缺失 | ❌ 不耗   |
 | `check_safety`      | `POST /guard/check`（`fast=true` → `/guard/check-fast`） | 40+ 特征安全网关：Prompt 注入 / 越狱 / 有害内容 / 敏感信息泄露 / 欺诈 | ✅ detect |
 
 > 鉴权模型：客户端在各自机器配 `Authorization: Bearer <你的 HallucC API key>` 头 → server 提取并**原样透传**到后端 → 后端校验 + 扣同一账号额度。key 只在 HTTP 头里流转，**不进工具参数、不进模型 transcript**。
