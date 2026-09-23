@@ -1,5 +1,5 @@
 /**
- * 4 个工具的 zod 输入 schema（raw shape）。
+ * 5 个工具的 zod 输入 schema（raw shape）。
  * 约束逐字段对齐后端 Pydantic `Field(...)` 上限（server.py），避免被后端 422。
  * inputSchema 传 raw shape（{k: ZodType}），由 SDK 的 objectFromShape 组装。
  */

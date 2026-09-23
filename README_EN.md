@@ -15,7 +15,7 @@
 - 📝 Web app (free daily quota): https://aihcc.cloud
 
 
-## Tools (4)
+## Tools (5)
 
 | Tool | Backend endpoint | What it does | Quota |
 |---|---|---|---|
@@ -126,7 +126,7 @@ npx @modelcontextprotocol/inspector
 - Missing/invalid `Authorization` header → 401 JSON-RPC error at the MCP layer.
 - Valid key but quota exhausted → backend 429, mapped to "free quota exhausted, resets tomorrow or upgrade".
 - Every tool response includes a `quota` object (backend `quota_status`), same source as the web dashboard, decremented per call.
-- `check_cua_actions` is pure rules — **no LLM, no quota cost**, safe for high-frequency use.
+- `check_cua_actions` and `check_cua_code_audit` are both pure rules — **no LLM, no quota cost**, safe for high-frequency use.
 
 ## Project layout
 
@@ -135,12 +135,13 @@ src/
   server.ts     Express + StreamableHTTP transport (stateless) + auth middleware + tool registration
   context.ts    config loading + API key extraction
   backend.ts    BackendClient (key pass-through, unified 401/429/5xx mapping) + toMcpResult
-  schemas.ts    zod input schemas for the 4 tools (aligned with backend Pydantic Fields)
+  schemas.ts    zod input schemas for the 5 tools (aligned with backend Pydantic Fields)
   tools/
     verifyText.ts       → /detect
     verifyAgent.ts      → /detect-agent
-    checkCuaActions.ts  → /cua/classify
-    checkSafety.ts      → /guard/check (fast → /guard/check-fast)
+    checkCuaActions.ts    → /cua/classify
+    checkCuaCodeAudit.ts  → /cua/audit-code
+    checkSafety.ts        → /guard/check (fast → /guard/check-fast)
     index.ts            registerAllTools
 ```
 

@@ -17,7 +17,7 @@
 - 📝 网页版检测（免费额度 2 次/天）：https://aihcc.cloud
 
 
-## 工具集（4 个）
+## 工具集（5 个）
 
 | 工具                | 后端端点                                                 | 作用                                                         | 耗额度   |
 | ------------------- | -------------------------------------------------------- | ------------------------------------------------------------ | -------- |
@@ -130,7 +130,7 @@ npx @modelcontextprotocol/inspector
 - 无 `Authorization` 头或 key 无效 → MCP 层返回 401 JSON-RPC 错误。
 - key 有效但额度耗尽 → 后端返回 429，server 映射成「免费额度已用完，请明天重置或升级套餐」。
 - 每个工具响应里的 `quota` 对象 = 后端 `quota_status`，与 Web 仪表盘同源、随调用递减。
-- `check_cua_actions` 是纯规则，**不调 LLM、不耗额度**，可放心高频调用。
+- `check_cua_actions` 与 `check_cua_code_audit` 均为纯规则，**不调 LLM、不耗额度**，可放心高频调用。
 
 ## 项目结构
 
@@ -139,12 +139,13 @@ src/
   server.ts     Express + StreamableHTTP transport（stateless）+ 鉴权中间件 + 注册工具
   context.ts    配置加载 + API key 提取
   backend.ts    BackendClient（透传 key、统一 401/429/5xx 错误映射）+ toMcpResult
-  schemas.ts    4 工具 zod 输入 schema（约束对齐后端 Pydantic Field）
+  schemas.ts    5 工具 zod 输入 schema（约束对齐后端 Pydantic Field）
   tools/
     verifyText.ts       → /detect
     verifyAgent.ts      → /detect-agent
-    checkCuaActions.ts  → /cua/classify
-    checkSafety.ts      → /guard/check（fast → /guard/check-fast）
+    checkCuaActions.ts    → /cua/classify
+    checkCuaCodeAudit.ts  → /cua/audit-code
+    checkSafety.ts        → /guard/check（fast → /guard/check-fast）
     index.ts            registerAllTools
 ```
 
