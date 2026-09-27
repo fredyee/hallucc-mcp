@@ -72,7 +72,22 @@ const cuaAction = z
     element: z.string().optional().describe("target_element 别名"),
     target_path: z.string().optional().describe("文件操作路径 / 终端命令路径"),
     path: z.string().optional().describe("target_path 别名"),
+    target_url: z.string().optional().describe("浏览器动作的目标 URL（域名分级 / 未知域导航 / 粘贴到未知域规则用）"),
+    url: z.string().optional().describe("target_url 别名"),
     thought: z.string().optional().describe("agent 推理文本（审计留痕）"),
+    task_scope: z
+      .object({
+        task: z.string().min(1).describe("声明的任务意图（如「整理本周会议纪要」）"),
+        allowed_apps: z.array(z.string()).optional().describe("允许的前台应用白名单"),
+        allowed_domains: z.array(z.string()).optional().describe("允许访问的域名白名单（后缀匹配含子域）"),
+        forbidden_elements: z.array(z.string()).optional().describe("禁止出现的元素标签（最高优先级）"),
+      })
+      .optional()
+      .describe("P1-5 任务允许范围声明（服务端按动作读取；越界升一级，只能收窄）"),
+    chain_id: z.string().optional().describe("P1-9 多智能体委托链 id（uuid hex）；给了则审计按 chain_id 跨会话聚合，可在 /cua/audit 看链路视图"),
+    agent_id: z.string().optional().describe("P1-9 本动作所属 Agent 名（如 research），配合 registered_agents 做注册校验"),
+    parent_agent_id: z.string().optional().describe("P1-9 委托方 Agent 名；跨 agent 边界的传播链由此配对"),
+    delegation_depth: z.number().int().min(0).optional().describe("P1-9 委托深度（根 Agent=0）；超 delegation_max_depth 升 L2"),
   })
   .describe("单条 CUA 动作");
 
@@ -88,6 +103,17 @@ export const checkCuaActionsSchema = {
     .max(64)
     .optional()
     .describe("给了则把分级结果写入审计表，可在 /cua/audit 回放"),
+  task_scope: z
+    .object({
+      task: z.string().min(1).describe("声明的任务意图（如「整理本周会议纪要」）"),
+      allowed_apps: z.array(z.string()).optional().describe("允许的前台应用白名单"),
+      allowed_domains: z.array(z.string()).optional().describe("允许访问的域名白名单（后缀匹配含子域）"),
+      forbidden_elements: z.array(z.string()).optional().describe("禁止出现的元素标签（最高优先级）"),
+    })
+    .optional()
+    .describe(
+      "任务意图对齐（收窄机制）：动作越出 scope 时升一级处置（L0→L1、L1→L2、L2 保持但追加原因、L3 不变）。只能升级不能降级；不传则零影响。",
+    ),
 };
 
 /** 4. check_safety → POST /guard/check （GuardRequest, server.py:1756）；fast → /guard/check-fast */

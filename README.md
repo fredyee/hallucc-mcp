@@ -23,11 +23,34 @@
 | ------------------- | -------------------------------------------------------- | ------------------------------------------------------------ | -------- |
 | `verify_text`       | `POST /detect`                                           | 逐声明幻觉核验：返回红/黄/绿汇总 + 每条声明 status/confidence/reason/**sources** + citations | ✅ detect |
 | `verify_agent`      | `POST /detect-agent`                                     | agent 最终输出文本级核验 + 执行轨迹六维评估（事实性/来源/指令合规/工具声明一致/任务完成/反思） | ✅ detect |
-| `check_cua_actions` | `POST /cua/classify`                                     | Computer-Use Agent 动作风险分级 L0-L3（纯规则，无 LLM）      | ❌ 不耗   |
+| `check_cua_actions` | `POST /cua/classify`                                     | Computer-Use Agent 动作风险分级 L0-L3 + takeover（凭据场景挂起）；覆盖敏感路径/破坏性命令、域名分级、支付金额阈值、task_scope 任务意图偏离、多智能体委托链跨跳污点分析；响应含 ruleset_version 与 disclaimer（纯规则，无 LLM） | ❌ 不耗   |
 | `check_cua_code_audit` | `POST /cua/audit-code`                                  | Agent 源码静态审计：危险导入 / 权限边界 / 注入面 / 危险默认值 / 沙箱缺失 | ❌ 不耗   |
 | `check_safety`      | `POST /guard/check`（`fast=true` → `/guard/check-fast`） | 40+ 特征安全网关：Prompt 注入 / 越狱 / 有害内容 / 敏感信息泄露 / 欺诈 | ✅ detect |
 
 > 鉴权模型：客户端在各自机器配 `Authorization: Bearer <你的 HallucC API key>` 头 → server 提取并**原样透传**到后端 → 后端校验 + 扣同一账号额度。key 只在 HTTP 头里流转，**不进工具参数、不进模型 transcript**。
+
+### `check_cua_actions` 的收窄能力
+
+| 字段 | 作用 |
+|---|---|
+| `actions[].target_url` / `url` | 浏览器动作目标 URL——未知域导航升 L2、粘贴敏感内容到非白名单域升 L3、黑名单域 L3 |
+| `task_scope.task` | 声明任务意图，供偏离检测与审计留痕 |
+| `task_scope.allowed_apps` / `allowed_domains` | 允许的应用/域名（域名后缀匹配含子域） |
+| `task_scope.forbidden_elements` | 禁止的元素标签（优先级最高） |
+| `actions[].chain_id` | 多智能体委托链 id（uuid hex）——给了则响应追加 `chain_trace` 链级跨跳污点分析 |
+| `actions[].agent_id` / `parent_agent_id` | 本动作所属 Agent / 委托方 Agent，跨 agent 边界的传播链由此配对 |
+| `actions[].delegation_depth` | 委托深度（根 Agent=0），子 Agent 外发命中敏感模式内容会追加 L2 |
+
+任务越出 `task_scope` 时**升一级**处置（L0→L1、L1→L2、L2 保持但追加「超出任务范围」、L3 不变）；
+该机制只能收窄不可放宽，不传 `task_scope` 则零影响。凭据字段与支付/登录域会产出 `takeover` 裁决
+（挂起等用户亲手输入，agent 不替用户输密码）。
+
+多智能体场景（Claude Code Task 子代理 / Codex agents / Kimi 等）：父 Agent 读密钥文件（单看 L0）→
+子 Agent 外发（单看 L2）每跳单独无害、链路整体高危。每条动作带上委托链字段后，服务端会追加
+`chain_trace`：跨 agent 传播存在时链路聚合级别抬到 L3 并置 `risk_diluted`（洗白信号）。
+链字段不传则完全零影响——老调用方无需任何改动。
+
+响应体的 `ruleset_version` 可用于核对在线检测与本地 Gate 是否同版规则。
 
 ## 公网接入（推荐，无需本地运行）
 

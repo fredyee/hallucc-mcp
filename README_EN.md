@@ -21,11 +21,29 @@
 |---|---|---|---|
 | `verify_text` | `POST /detect` | Claim-by-claim hallucination check: red/yellow/green summary + per-claim status/confidence/reason/**sources** + citations | ✅ detect |
 | `verify_agent` | `POST /detect-agent` | Text-level verification of an agent's final output + 6-dimension trajectory evaluation (factuality / sourcing / instruction compliance / tool-claim consistency / task completion / reflection) | ✅ detect |
-| `check_cua_actions` | `POST /cua/classify` | L0-L3 risk classification for Computer-Use Agent actions (pure rules, no LLM) | ❌ free |
+| `check_cua_actions` | `POST /cua/classify` | L0-L3 risk classification for Computer-Use Agent (CUA) actions + `takeover` (credential scenarios); covers sensitive paths/destructive commands, domain grading, payment-amount thresholds, task_scope intent deviation, and multi-agent delegation-chain taint analysis; response includes `ruleset_version` and `disclaimer` (pure rules, no LLM) | ❌ free |
 | `check_cua_code_audit` | `POST /cua/audit-code` | Static audit of Agent source code: dangerous imports / permission boundaries / injection surfaces / dangerous defaults / sandbox absence | ❌ free |
 | `check_safety` | `POST /guard/check` (`fast=true` → `/guard/check-fast`) | 40+ feature safety gateway: prompt injection / jailbreak / harmful content / PII leakage / fraud | ✅ detect |
 
 > Auth model: each client sends `Authorization: Bearer <your HallucC API key>` → the server forwards it **as-is** to the backend → the backend validates and deducts from the same account quota as the web app. Keys travel only in HTTP headers — **never in tool arguments, never in model transcripts**.
+
+### The tightening capabilities of `check_cua_actions`
+
+| Field | Effect |
+|---|---|
+| `actions[].target_url` / `url` | Target URL of a browser action — navigation to an unknown domain escalates to L2; pasting sensitive content to a non-allowlisted domain escalates to L3; blacklisted domains are L3 |
+| `task_scope.task` | Declares the intended task, used for deviation detection and audit traceability |
+| `task_scope.allowed_apps` / `allowed_domains` | Allowed apps / domains (domain suffix matching includes subdomains) |
+| `task_scope.forbidden_elements` | Forbidden element labels (highest precedence) |
+| `actions[].chain_id` | Multi-agent delegation chain id (uuid hex) — when given, the response gains a `chain_trace` cross-hop taint analysis |
+| `actions[].agent_id` / `parent_agent_id` | The agent owning this action / its delegating parent — pairs cross-agent-boundary propagation chains |
+| `actions[].delegation_depth` | Delegation depth (root agent = 0); a subagent exfiltrating content matching sensitive patterns gets an L2 |
+
+An action that leaves `task_scope` is **escalated one level** (L0→L1, L1→L2, L2 stays L2 with an "outside task scope" reason appended, L3 unchanged). This mechanism only tightens and never loosens; omitting `task_scope` has no effect. Credential fields and payment/login domains yield a `takeover` verdict (suspend and wait for the user to type it themselves — the agent never types your password).
+
+Multi-agent setups (Claude Code Task subagents, Codex agents, Kimi, …): a parent agent reading a credential file (L0 on its own) → a subagent posting it out (L2 on its own) is harmless per hop and dangerous as a chain. Attach the delegation-chain fields to each action and the backend appends a `chain_trace`: when cross-agent propagation exists the chain aggregate level is raised to L3 and `risk_diluted` is set (the laundering signal). Leave the chain fields empty and behaviour is bit-for-bit unchanged — existing callers need no change.
+
+The response's `ruleset_version` lets you verify that online detection and the local Gate run the same rule version.
 
 ## Hosted endpoint (recommended, zero local setup)
 
