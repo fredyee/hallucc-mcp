@@ -14,7 +14,7 @@
 
 - 🔍 真实检测结果示例（含逐句标注 + 置信度 + 来源链接）：https://aihcc.cloud/r/GttouoJfMpkC
 - 🛡️ CUA 动作分级在线体验（纯规则，不耗额度）：https://aihcc.cloud/cua
-- 📝 网页版检测（免费额度 2 次/天）：https://aihcc.cloud
+- 📝 网页版检测（免费额度 3 次/天）：https://aihcc.cloud
 
 
 ## 工具集（5 个）

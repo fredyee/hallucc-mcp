@@ -12,7 +12,7 @@
 
 - 🔍 A real verification report (per-claim verdicts + confidence + sources): https://aihcc.cloud/r/GttouoJfMpkC
 - 🛡️ Try CUA action gating online (rule-based, free, no quota cost): https://aihcc.cloud/cua
-- 📝 Web app (free daily quota): https://aihcc.cloud
+- 📝 Web app (3 free checks per day): https://aihcc.cloud
 
 
 ## Tools (5)
