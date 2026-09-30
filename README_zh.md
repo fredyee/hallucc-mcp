@@ -178,7 +178,7 @@ Streamable HTTP（当前 MCP 规范推荐的 remote 传输，即「HTTP+SSE」�
 
 ## 收录与生态
 
-- ✅ 官方 MCP Registry：`io.github.fredyee/hallucc` v0.1.1（active）
+- ✅ 官方 MCP Registry：`io.github.fredyee/hallucc` v0.1.8（active）
 - ✅ 魔搭 MCP 广场：[@hallucC/hallucc](https://modelscope.cn/mcp/servers/hallucC/hallucc)
 - ✅ 扣子 Coze 商店：[HallucC 事实核查助手](https://www.coze.cn/store/agent/7685683870800494628)
 

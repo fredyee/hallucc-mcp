@@ -169,7 +169,7 @@ Streamable HTTP (the remote transport recommended by the current MCP spec, forme
 
 ## Listed on
 
-- ✅ Official MCP Registry: `io.github.fredyee/hallucc` v0.1.1 (active)
+- ✅ Official MCP Registry: `io.github.fredyee/hallucc` v0.1.8 (active)
 - ✅ ModelScope MCP Square: [@hallucC/hallucc](https://modelscope.cn/mcp/servers/hallucC/hallucc)
 - ✅ Coze Store: [HallucC Fact-Check Assistant](https://www.coze.cn/store/agent/7685683870800494628)
 
