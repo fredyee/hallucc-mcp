@@ -33,6 +33,24 @@ const app = createMcpExpressApp({
   allowedHosts: ["aihcc.cloud", "www.aihcc.cloud", "127.0.0.1", "localhost", "[::1]"],
 });
 
+// CORS：允许浏览器端 MCP 客户端（Glama 等 Web 沙箱）直接调用 /mcp。
+// 必须挂在业务路由与鉴权之前——浏览器 OPTIONS 预检不带 API key，也要能 204 通过。
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", req.headers.origin ?? "*");
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Accept, Content-Type, Authorization, Mcp-Session-Id, MCP-Protocol-Version, Last-Event-ID",
+  );
+  res.setHeader("Access-Control-Max-Age", "86400");
+  if (req.method === "OPTIONS") {
+    res.writeHead(204).end();
+    return;
+  }
+  next();
+});
+
 // 健康检查（鉴权无关，给运维 / 验证用）
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", server: SERVER_NAME, version: SERVER_VERSION, backend: cfg.baseUrl });
