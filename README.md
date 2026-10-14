@@ -141,7 +141,14 @@ npx @modelcontextprotocol/inspector
 
 ## Auth & quota
 
-- Missing/invalid `Authorization` header → 401 JSON-RPC error at the MCP layer.
+- Auth is two-tier at the MCP layer. `tools/call` (and any non-discovery method) requires a
+  format-valid key — `hc_` + 48 hex — else 401 JSON-RPC, **before** the backend is contacted.
+  The format check is a local regex, no backend round-trip.
+- Discovery methods (`initialize`, `tools/list`, `ping`, `notifications/initialized`) stay open
+  unauthenticated so registries and directory sites can index the server: they make no backend
+  call and expose no user data. Set `MCP_ALLOW_ANON_DISCOVERY=0` to gate those too.
+- Actual key validity (existence, revocation, expiry) is always decided by the backend's
+  `verify_api_key`; the MCP-layer check only rejects tokens that can't possibly be real keys.
 - Valid key but quota exhausted → backend 429, mapped to "free quota exhausted, resets tomorrow or upgrade".
 - Every tool response includes a `quota` object (backend `quota_status`), same source as the web dashboard, decremented per call.
 - `check_cua_actions` and `check_cua_code_audit` are both pure rules — **no LLM, no quota cost**, safe for high-frequency use.

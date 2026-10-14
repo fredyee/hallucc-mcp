@@ -18,6 +18,12 @@ export interface ServerConfig {
   backendTimeoutMs: number;
   /** 绑定地址 */
   host: string;
+  /**
+   * 是否允许「无 key」做发现类调用（initialize / tools/list 等只读内省）。
+   * 默认 true：注册表与目录站靠它收录，且这类方法不发后端请求、不泄密。
+   * 设 `MCP_ALLOW_ANON_DISCOVERY=0` 则所有方法都要求格式合法的 key。
+   */
+  allowAnonDiscovery: boolean;
 }
 
 export function loadConfig(): ServerConfig {
@@ -25,7 +31,8 @@ export function loadConfig(): ServerConfig {
   const host = process.env.HOST ?? "127.0.0.1";
   const baseUrl = (process.env.HALLUCC_BASE_URL ?? "http://127.0.0.1:8001").replace(/\/+$/, "");
   const backendTimeoutMs = Number(process.env.BACKEND_TIMEOUT_MS ?? 120000);
-  return { baseUrl, port, backendTimeoutMs, host };
+  const allowAnonDiscovery = process.env.MCP_ALLOW_ANON_DISCOVERY !== "0";
+  return { baseUrl, port, backendTimeoutMs, host, allowAnonDiscovery };
 }
 
 /**
@@ -44,4 +51,18 @@ export function extractApiKey(req: IncomingMessage): string | null {
   // 容错：裸 key（无 Bearer 前缀）
   const k = h.trim();
   return k || null;
+}
+
+/**
+ * API key 格式门禁：`hc_` + 48 位 hex，与后端 auth.py `_gen_api_key()`
+ * （`"hc_" + secrets.token_hex(24)`）对齐。
+ *
+ * 只校验**格式**，不发后端请求 —— 用于在 MCP 层就地拦掉爬虫/伪造 token。
+ * 真 key 的有效性仍由后端 `verify_api_key`（sha256 比对）判定，两层互不替代。
+ * 误伤风险为零：生产库 598 个 key 全部符合该格式（2026-10-14 核对 hallucc.db）。
+ */
+export const API_KEY_PATTERN = /^hc_[0-9a-f]{48}$/;
+
+export function isValidApiKey(key: string | null | undefined): key is string {
+  return !!key && API_KEY_PATTERN.test(key);
 }

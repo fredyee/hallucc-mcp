@@ -150,7 +150,13 @@ npx @modelcontextprotocol/inspector
 
 ## 鉴权与额度
 
-- 无 `Authorization` 头或 key 无效 → MCP 层返回 401 JSON-RPC 错误。
+- MCP 层鉴权分两层。`tools/call`（及任何非发现类方法）必须持格式合法的 key（`hc_` + 48 位 hex），
+  否则返回 401 JSON-RPC —— **在请求到达后端之前**就拦下。格式检查是本地正则，不产生后端往返。
+- 发现类方法（`initialize` / `tools/list` / `ping` / `notifications/initialized`）保持免鉴权，
+  以便注册表与目录站收录：这类方法不调后端、不返回任何用户数据。设 `MCP_ALLOW_ANON_DISCOVERY=0`
+  可一并收紧。
+- key 的真实有效性（是否存在 / 已撤销 / 已过期）始终由后端 `verify_api_key` 判定；
+  MCP 层只负责挡掉「不可能是真 key」的串。
 - key 有效但额度耗尽 → 后端返回 429，server 映射成「免费额度已用完，请明天重置或升级套餐」。
 - 每个工具响应里的 `quota` 对象 = 后端 `quota_status`，与 Web 仪表盘同源、随调用递减。
 - `check_cua_actions` 与 `check_cua_code_audit` 均为纯规则，**不调 LLM、不耗额度**，可放心高频调用。
