@@ -5,6 +5,7 @@
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-blue)](https://registry.modelcontextprotocol.io/v0/servers?search=hallucc)
 [![npm](https://img.shields.io/npm/v/hallucc-mcp)](https://www.npmjs.com/package/hallucc-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![smithery badge](https://smithery.ai/badge/fredyee2009/hallucc-mcp)](https://smithery.ai/servers/fredyee2009/hallucc-mcp)
 
 > Give your AI a fact-checker and a safety gateway: claim-by-claim hallucination detection, agent trajectory evaluation, L0-L3 risk gating for Computer-Use Agent (CUA) actions, Agent source code static audit, and a 40+ feature prompt-injection / jailbreak guard — one MCP server, five tools, works with Claude Code / Cursor / Claude Desktop.
 
