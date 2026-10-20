@@ -153,3 +153,191 @@ export const checkCuaCodeAuditSchema = {
     .optional()
     .describe("多文件模式：[{path, content, language?}] 数组，与 code 二选一"),
 };
+
+/* ------------------------------------------------------------------ */
+/* 输出 schema：字段名与后端 handler 的 return dict 逐一对齐。          */
+/*                                                                     */
+/* 两个硬约束决定了它们必须「宽」：                                    */
+/* 1. 注册了 outputSchema 后，SDK 的 validateToolOutput 会对每次调用   */
+/*    做校验；回调没有 structuredContent 会直接抛 InvalidParams，      */
+/*    结构不匹配同样抛 —— 约束过严等于线上每次 tools/call 都 500。     */
+/*    （实测踩过：/cua/classify 不传 session_id 时后端回 null，        */
+/*      z.string().optional() 不接受 null，导致该工具全量失败。）      */
+/* 2. 后端是自由 dict（无 response_model），会随迭代加字段 / 补 null。 */
+/*    因此：标量一律 .nullish()（接受 undefined 与 null）、其余 optional */
+/*    + .passthrough()，只声明稳定字段，深度动态结构（Source /          */
+/*    chain_trace / hallucination / llm_analysis）一律 unknown。       */
+/* ------------------------------------------------------------------ */
+
+/** 后端额度快照（auth.quota_status）。内部键随套餐迭代，只约束是对象。 */
+const quota = z.record(z.string(), z.unknown()).nullish();
+
+/** 后端 JSON 对象（来源/引用/step 等自由结构）。 */
+const obj = z.record(z.string(), z.unknown()).nullish();
+
+/** 字符串字段：接受 null（后端 Pydantic `str | None` 常回 null）。 */
+const str = () => z.string().nullish();
+
+/** 整数 / 浮点字段。 */
+const num = () => z.number().nullish();
+const int = () => z.number().int().nullish();
+const bool = () => z.boolean().nullish();
+
+/**
+ * 幻觉核验汇总结论。注意是对象不是字符串（实测：
+ * {"total":1,"red":0,"yellow":1,"green":0,"hallucination_risk":1}）——
+ * 早期按源码把 summary 当成 string，导致 verify_text / verify_agent
+ * 线上每次调用都被 output 校验拦下。
+ */
+const detectSummary = z
+  .object({
+    total: int(),
+    red: int(),
+    yellow: int(),
+    green: int(),
+    hallucination_risk: num(),
+  })
+  .passthrough()
+  .nullish();
+
+/** 1. verify_text → POST /detect（_run_detect 返回值） */
+export const verifyTextOutput = z
+  .object({
+    detection_id: int(),
+    input: str(),
+    summary: detectSummary,
+    claims: z.array(z.unknown()).nullish(),
+    citations: z.array(z.unknown()).nullish(),
+    math_issues: z.array(z.unknown()).nullish(),
+    strict: bool(),
+    domain: str(),
+    speed: str(),
+    elapsed_ms: num(),
+    quota,
+  })
+  .passthrough();
+
+/** 2. verify_agent → POST /detect-agent
+ *  注：verifyAgent.ts 回调已删除 dimensions / failure_modes（不外泄内部评分骨架），
+ *  故这里不声明这两个字段。 */
+export const verifyAgentOutput = z
+  .object({
+    detection_id: int(),
+    main: z
+      .object({ input: str(), summary: detectSummary, claims: z.array(z.unknown()).nullish() })
+      .passthrough()
+      .nullish(),
+    steps: z.array(obj).nullish(),
+    agent_eval: obj,
+    quota,
+  })
+  .passthrough();
+
+/** 3. check_cua_actions → POST /cua/classify */
+export const checkCuaActionsOutput = z
+  .object({
+    results: z
+      .array(
+        z
+          .object({
+            step: int(),
+            action: obj,
+            level: z.enum(["L0", "L1", "L2", "L3"]).nullish(),
+            verdict: str(),
+            outcome: str(),
+            reasons: z.array(z.string()).nullish(),
+            matched_rules: z.array(z.unknown()).nullish(),
+          })
+          .passthrough(),
+      )
+      .nullish(),
+    summary: z
+      .object({
+        total: int(),
+        L0: int(),
+        L1: int(),
+        L2: int(),
+        L3: int(),
+        blocked: int(),
+        confirm: int(),
+        takeover: int(),
+      })
+      .passthrough()
+      .nullish(),
+    chains: z.array(z.unknown()).nullish(),
+    has_propagation: bool(),
+    injection_steps: int(),
+    chain_trace: z.unknown().nullish(),
+    session_id: str(),
+    ruleset_version: str(),
+    disclaimer: str(),
+    // trace 解析出 0 步时的空结果变体
+    warning: str(),
+  })
+  .passthrough();
+
+/** 4. check_safety → POST /guard/check（或 fast → /guard/check-fast） */
+export const checkSafetyOutput = z
+  .object({
+    detection_id: int(),
+    passed: bool(),
+    risk_score: num(),
+    risk_level: str(),
+    summary: str(),
+    injection_detected: bool(),
+    jailbreak_detected: bool(),
+    harmful_detected: bool(),
+    threats: z
+      .array(
+        z
+          .object({
+            category: str(),
+            category_name: str(),
+            severity: str(),
+            match_context: str(),
+            recommendation: str(),
+          })
+          .passthrough(),
+      )
+      .nullish(),
+    hallucination: z.unknown().nullish(),
+    llm_analysis: z.unknown().nullish(),
+    quota,
+  })
+  .passthrough();
+
+/** 5. check_cua_code_audit → POST /cua/audit-code（AuditReport.to_dict） */
+export const checkCuaCodeAuditOutput = z
+  .object({
+    findings: z
+      .array(
+        z
+          .object({
+            file: str(),
+            line: int(),
+            severity: z.enum(["high", "medium", "low"]).nullish(),
+            category: str(),
+            detail: str(),
+            raw: str(),
+          })
+          .passthrough(),
+      )
+      .nullish(),
+    summary: z
+      .object({
+        total: int(),
+        by_severity: obj,
+        by_category: obj,
+        capability_level: str(),
+        tool_count: int(),
+        dangerous_import_count: int(),
+        injection_surface_count: int(),
+      })
+      .passthrough()
+      .nullish(),
+    disclaimer: str(),
+    privacy_note: str(),
+    ruleset_version: str(),
+  })
+  .passthrough();
+

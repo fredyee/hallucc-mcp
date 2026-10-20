@@ -4,3 +4,5 @@ dist/
 *.log
 # 第三方发布的本地二进制产物（~19MB），非源码
 /mcp-publisher
+# gen:card 的产物（部署副本已落在 /var/www/aihcc/.well-known/mcp/），仅作 diff 复查用
+/server-card.updated.json

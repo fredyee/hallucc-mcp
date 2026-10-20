@@ -38,6 +38,8 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "start:stdio": "tsx src/stdio.ts",
+    "gen:card": "node scripts/gen-server-card.mjs",
+    "verify:output": "node scripts/verify-output-schemas.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:examples": "tsc --noEmit --ignoreConfig --strict --noUncheckedIndexedAccess --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022 --types node --skipLibCheck examples/gate-before-write/index.ts",

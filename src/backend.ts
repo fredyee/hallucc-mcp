@@ -87,11 +87,23 @@ function extractDetail(data: unknown): string {
   }
 }
 
-/** 把后端结果转成 MCP 工具返回：成功→美化 JSON 文本；失败→错误文本 + isError。 */
+/**
+ * 把后端结果转成 MCP 工具返回：成功→美化 JSON 文本；失败→错误文本 + isError。
+ *
+ * 同时返回 structuredContent（MCP 结构化输出）：工具声明了 outputSchema 后，
+ * SDK 的 validateToolOutput 会强制要求 structuredContent 存在且匹配 schema，
+ * 缺失直接抛 InvalidParams。content 里的 JSON 文本保留不动——存量客户端只读
+ * content[0].text，加字段是纯增量、不破坏兼容。数组不包装（structuredContent
+ * 规范要求对象）。
+ */
 export function toMcpResult(r: BackendResult): CallToolResult {
   if (r.ok) {
     const text = typeof r.data === "string" ? r.data : JSON.stringify(r.data, null, 2);
-    return { content: [{ type: "text" as const, text }], isError: false };
+    const result: CallToolResult = { content: [{ type: "text" as const, text }], isError: false };
+    if (r.data !== null && typeof r.data === "object" && !Array.isArray(r.data)) {
+      result.structuredContent = r.data as Record<string, unknown>;
+    }
+    return result;
   }
   return { content: [{ type: "text" as const, text: r.error }], isError: true };
 }
