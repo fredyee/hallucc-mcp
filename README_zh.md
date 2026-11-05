@@ -26,6 +26,8 @@
 | `check_cua_actions` | `POST /cua/classify`                                     | Computer-Use Agent 动作风险分级 L0-L3 + takeover（凭据场景挂起）；覆盖敏感路径/破坏性命令、域名分级、支付金额阈值、task_scope 任务意图偏离、多智能体委托链跨跳污点分析；响应含 ruleset_version 与 disclaimer（纯规则，无 LLM） | ❌ 不耗   |
 | `check_cua_code_audit` | `POST /cua/audit-code`                                  | Agent 源码静态审计：危险导入 / 权限边界 / 注入面 / 危险默认值 / 沙箱缺失 | ❌ 不耗   |
 | `check_safety`      | `POST /guard/check`（`fast=true` → `/guard/check-fast`） | 40+ 特征安全网关：Prompt 注入 / 越狱 / 有害内容 / 敏感信息泄露 / 欺诈 | ✅ detect |
+| `check_agent_ice_wall` | `POST /icewall/check` | 智能体冰墙（童锁/保险丝）：单步护栏 + 会话级风险累积熔断。只看 `action` 字段：`frozen` = 整场立即停机（累积 ≥10 分 / 连续 3 次 block / 零容忍项一次即冻）；冷却 5 分钟自动解冻 | ✅ detect |
+| `reset_agent_ice_wall` | `POST /icewall/reset` | 手动解冻被冻结的 agent 会话（`was_frozen=false` 为幂等空操作） | ❌ free |
 
 > 鉴权模型：客户端在各自机器配 `Authorization: Bearer <你的 HallucC API key>` 头 → server 提取并**原样透传**到后端 → 后端校验 + 扣同一账号额度。key 只在 HTTP 头里流转，**不进工具参数、不进模型 transcript**。
 

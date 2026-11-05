@@ -25,6 +25,8 @@
 | `check_cua_actions` | `POST /cua/classify` | L0-L3 risk classification for Computer-Use Agent (CUA) actions + `takeover` (credential scenarios); covers sensitive paths/destructive commands, domain grading, payment-amount thresholds, task_scope intent deviation, and multi-agent delegation-chain taint analysis; response includes `ruleset_version` and `disclaimer` (pure rules, no LLM) | ❌ free |
 | `check_cua_code_audit` | `POST /cua/audit-code` | Static audit of Agent source code: dangerous imports / permission boundaries / injection surfaces / dangerous defaults / sandbox absence | ❌ free |
 | `check_safety` | `POST /guard/check` (`fast=true` → `/guard/check-fast`) | 40+ feature safety gateway: prompt injection / jailbreak / harmful content / PII leakage / fraud | ✅ detect |
+| `check_agent_ice_wall` | `POST /icewall/check` | Agent Ice Wall (child lock / fuse): per-step guard + session-level risk accumulation circuit breaker. Watch the `action` field: `frozen` = stop the whole session (score ≥10, 3 consecutive blocks, or zero-tolerance fabricated-tool/schema hits); 5-min cooldown auto-thaws | ✅ detect |
+| `reset_agent_ice_wall` | `POST /icewall/reset` | Manually thaw a frozen agent session after user confirmation (`was_frozen=false` = idempotent no-op) | ❌ free |
 
 > Auth model: each client sends `Authorization: Bearer <your HallucC API key>` → the server forwards it **as-is** to the backend → the backend validates and deducts from the same account quota as the web app. Keys travel only in HTTP headers — **never in tool arguments, never in model transcripts**.
 

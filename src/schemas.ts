@@ -1,5 +1,5 @@
 /**
- * 5 个工具的 zod 输入 schema（raw shape）。
+ * 7 个工具的 zod 输入 schema（raw shape）。
  * 约束逐字段对齐后端 Pydantic `Field(...)` 上限（server.py），避免被后端 422。
  * inputSchema 传 raw shape（{k: ZodType}），由 SDK 的 objectFromShape 组装。
  */
@@ -341,3 +341,84 @@ export const checkCuaCodeAuditOutput = z
   })
   .passthrough();
 
+
+/** 6. check_agent_ice_wall → POST /icewall/check（IceWallCheckRequest, server.py）
+ * 智能体冰墙（童锁/保险丝）：单步护栏 + 会话级风险累积熔断。 */
+export const checkAgentIceWallSchema = {
+  session_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .describe(
+      "会话 ID（由调用方自定并在整个 agent 会话内复用）：风险分按 session 累积，" +
+        "超阈值整场冻结。同一 agent 任务务必用同一个 ID，不同任务不要复用。",
+    ),
+  step: z
+    .object({
+      step: z.number().int().optional().describe("步序号"),
+      thought: z.string().optional().describe("该步思考"),
+      action: z.string().optional().describe("该步调用的工具/动作名"),
+      action_input: z.string().optional().describe("工具/动作输入"),
+      observation: z.string().optional().describe("工具/动作返回的观察"),
+      final_answer: z.string().optional().describe("最终回答（最后一步）"),
+      agent_claim: z.string().optional().describe("该步 agent 的声明（兼容 /detect-agent schema）"),
+      tool: z.string().optional().describe("工具名（兼容 /detect-agent schema）"),
+      tool_input: z.string().optional().describe("工具输入（兼容 /detect-agent schema）"),
+      tool_output: z.string().optional().describe("工具输出（兼容 /detect-agent schema）"),
+    })
+    .passthrough()
+    .describe("当前步（两种 schema 均兼容，服务端自动归一）"),
+  prior_steps: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional()
+    .describe("前序步（同 schema），供循环/重试风暴等跨步检测"),
+  task: z.string().max(5000).optional().describe("原始任务指令（参数来源校验用）"),
+  tool_schemas: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("工具注册表 {工具名: {required, properties}}；给了才启用捏造工具/参数 Schema 校验（这两项是零容忍熔断项）"),
+};
+
+/** 7. reset_agent_ice_wall → POST /icewall/reset */
+export const resetAgentIceWallSchema = {
+  session_id: z.string().min(1).max(128).describe("要解冻的会话 ID"),
+};
+
+const iceWallSession = z
+  .object({
+    state: z.enum(["normal", "frozen", "degraded"]).nullish(),
+    score: int(),
+    block_streak: int(),
+    frozen_until: num(),
+    tripped_by: str(),
+  })
+  .passthrough();
+
+export const checkAgentIceWallOutput = z
+  .object({
+    step: z
+      .object({
+        action: z.enum(["allow", "warn", "block", "frozen"]).nullish(),
+        summary: str(),
+        failure_modes: z.array(z.unknown()).nullish(),
+        checks: z.array(z.unknown()).nullish(),
+        latency_ms: num(),
+      })
+      .passthrough()
+      .nullish(),
+    session: iceWallSession.nullish(),
+    action: z
+      .enum(["allow", "warn", "block", "frozen"])
+      .nullish()
+      .describe("客户端唯一需要看的字段：frozen=整场立即停机"),
+    quota: z.unknown().nullish(),
+  })
+  .passthrough();
+
+export const resetAgentIceWallOutput = z
+  .object({
+    session_id: str(),
+    was_frozen: bool(),
+    session: iceWallSession.nullish(),
+  })
+  .passthrough();
