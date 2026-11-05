@@ -15,8 +15,16 @@ import type { Response } from "express";
 import { loadConfig, extractApiKey, isValidApiKey } from "./context.js";
 import { buildServer, SERVER_NAME, SERVER_VERSION } from "./mcpServer.js";
 import { LANDING_PAGE } from "./landing.js";
+import { reportVisitor, type VisitorTarget } from "./visitor.js";
 
 const cfg = loadConfig();
+
+// 访客上报目标：token 为空则完全不上报（MCP 流量保持原有不可见状态）。
+const visitorTarget: VisitorTarget = {
+  baseUrl: cfg.baseUrl,
+  token: cfg.visitorReportToken,
+  timeoutMs: Number(process.env.VISITOR_REPORT_TIMEOUT_MS ?? 500),
+};
 
 /** JSON-RPC 错误响应（与 MCP 协议错误体一致，便于客户端解析）。 */
 function jsonrpcError(res: Response, httpStatus: number, code: number, message: string): void {
@@ -73,6 +81,9 @@ app.get("/health", (_req, res) => {
 });
 
 app.post("/mcp", async (req, res) => {
+  // 访客上报（fire-and-forget）：/mcp 不经后端进程，否则这批流量对访客表完全不可见。
+  reportVisitor(visitorTarget, req, "/mcp", extractApiKey(req));
+
   // 门禁：发现类方法开放，其余方法必须在 MCP 层就持有格式合法的 key。
   //
   // 此前只要 Authorization 头非空就放行（任意伪造串都能握手拿完整 tools/list），
@@ -116,6 +127,7 @@ app.post("/mcp", async (req, res) => {
 });
 
 app.get("/mcp", async (req, res) => {
+  reportVisitor(visitorTarget, req, "/mcp", extractApiKey(req));
   // 浏览器直接打开 → 友好落地页（转化闭环：给 endpoint 页面一个可读的下一步）。
   // MCP 客户端（Accept 不含 text/html）→ 仍按协议返回 405（stateless 不支持 GET/SSE）。
   if (req.accepts(["text/html", "application/json"]) === "text/html") {
@@ -127,7 +139,8 @@ app.get("/mcp", async (req, res) => {
   );
 });
 
-app.delete("/mcp", async (_req, res) => {
+app.delete("/mcp", async (req, res) => {
+  reportVisitor(visitorTarget, req, "/mcp", extractApiKey(req));
   res.writeHead(405).end(
     JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed (stateless server)." }, id: null }),
   );
@@ -142,5 +155,8 @@ app.listen(cfg.port, cfg.host, () => {
   console.log(
     `[hallucc-mcp] 门禁：tools/call 等需格式合法的 key（hc_+48hex）；发现类方法` +
       `${cfg.allowAnonDiscovery ? "开放" : "也需 key"}（initialize / tools/list / ping）`,
+  );
+  console.log(
+    `[hallucc-mcp] 访客上报：${visitorTarget.token ? "已启用 → " + cfg.baseUrl + "/visitor/report" : "未启用（VISITOR_REPORT_TOKEN 未设置）"}`,
   );
 });

@@ -8,6 +8,7 @@
  * 不进工具参数、不进模型 transcript。
  */
 import type { IncomingMessage } from "node:http";
+import { readFileSync } from "node:fs";
 
 export interface ServerConfig {
   /** 后端 FastAPI 基址（默认 http://127.0.0.1:8001） */
@@ -24,6 +25,32 @@ export interface ServerConfig {
    * 设 `MCP_ALLOW_ANON_DISCOVERY=0` 则所有方法都要求格式合法的 key。
    */
   allowAnonDiscovery: boolean;
+  /**
+   * 访客上报凭证（与后端 VISITOR_REPORT_TOKEN 一致）。
+   * 为空则不上报 /mcp 流量。
+   */
+  visitorReportToken: string;
+}
+
+/**
+ * 从后端 .env 文件补读单个配置项。
+ *
+ * MCP service 的环境变量在 systemd unit 里逐个声明，加一个新变量要改 unit +
+ * daemon-reload；直接读后端 .env 少一次部署动作。npm 分发的版本读不到该文件
+ * （路径不存在）→ 返回空串 → 不上报，行为与未配置一致。
+ */
+export function envFromFile(key: string, filePath = process.env.HALLUCC_ENV_FILE ?? "../hallucc/.env"): string {
+  try {
+    for (const line of readFileSync(filePath, "utf8").split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m && m[1] === key && !line.trimStart().startsWith("#")) {
+        return (m[2] ?? "").replace(/^["']|["']$/g, "");
+      }
+    }
+  } catch {
+    /* 文件不存在或不可读 → 视为未配置 */
+  }
+  return "";
 }
 
 export function loadConfig(): ServerConfig {
@@ -32,7 +59,8 @@ export function loadConfig(): ServerConfig {
   const baseUrl = (process.env.HALLUCC_BASE_URL ?? "http://127.0.0.1:8001").replace(/\/+$/, "");
   const backendTimeoutMs = Number(process.env.BACKEND_TIMEOUT_MS ?? 120000);
   const allowAnonDiscovery = process.env.MCP_ALLOW_ANON_DISCOVERY !== "0";
-  return { baseUrl, port, backendTimeoutMs, host, allowAnonDiscovery };
+  const visitorReportToken = process.env.VISITOR_REPORT_TOKEN ?? envFromFile("VISITOR_REPORT_TOKEN");
+  return { baseUrl, port, backendTimeoutMs, host, allowAnonDiscovery, visitorReportToken };
 }
 
 /**
