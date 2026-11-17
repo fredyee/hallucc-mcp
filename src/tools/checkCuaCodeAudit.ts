@@ -12,9 +12,10 @@ export function registerCheckCuaCodeAudit(server: McpServer, backend: BackendCli
     {
       title: "Audit CUA Code",
       description:
-        "CUA 代码审计：静态分析 Agent 源码，检测危险导入（subprocess/os.system 等）、" +
-        "权限边界（eval/exec）、注入面（字符串拼接 shell）、危险默认值、沙箱缺失。" +
-        "纯规则扫描，不调 LLM、不耗额度。支持单文件或多文件扫描。",
+        "CUA code audit: static analysis of agent source code that detects dangerous imports (subprocess, " +
+        "os.system, and similar), privilege boundaries (eval/exec), injection surface " +
+        "(string-concatenated shell commands), dangerous defaults, and missing sandboxing. Pure " +
+        "rule-based scanning: no LLM calls, no quota consumed. Supports single-file and multi-file scans.",
       inputSchema: checkCuaCodeAuditSchema,
       outputSchema: checkCuaCodeAuditOutput,
       annotations: {

@@ -13,10 +13,11 @@ export function registerCheckSafety(server: McpServer, backend: BackendClient): 
     {
       title: "Check Safety",
       description:
-        "AI 安全网关检测。对 prompt + output 跑 OWASP LLM Top 10 三层检测：40+ 特征规则引擎" +
-        "（注入/越狱/有害内容/敏感信息泄露/欺诈）+ 可选 LLM 深度分析 + 可选幻觉检测。" +
-        "返回 passed、risk_score、risk_level、threats[]（category/severity/match_context/" +
-        "recommendation）、quota。fast=true 走纯规则 <10ms 模式。耗 detect 额度（fast 亦计入）。",
+        "AI safety gateway detection. Runs three-layer OWASP LLM Top 10 detection on prompt + output: a " +
+        "40+ signature rule engine (injection, jailbreak, harmful content, sensitive data leakage, fraud) " +
+        "plus optional LLM deep analysis and optional hallucination detection. Returns passed, " +
+        "risk_score, risk_level, threats[] (category/severity/match_context/recommendation) and quota. " +
+        "fast=true uses the rule-only sub-10ms mode. Consumes detect quota (fast calls count too).",
       inputSchema: checkSafetySchema,
       outputSchema: checkSafetyOutput,
       annotations: {

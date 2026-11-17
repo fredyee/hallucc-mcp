@@ -11,45 +11,45 @@ const MAX_INPUT_CHARS = 50000;
 const domain = z
   .enum(["general", "medical", "legal", "finance", "education", "government"])
   .optional()
-  .describe("领域模式：general|medical|legal|finance|education|government");
+  .describe("Domain mode: general|medical|legal|finance|education|government");
 
 const speed = z
   .enum(["fast", "standard", "deep"])
   .optional()
-  .describe("速度模式：fast|standard|deep，默认 standard");
+  .describe("Speed mode: fast|standard|deep (default: standard)");
 
 /** 1. verify_text → POST /detect （DetectRequest, server.py:267） */
 export const verifyTextSchema = {
-  text: z.string().min(1).max(MAX_INPUT_CHARS).describe("待核验的文本"),
-  strict: z.boolean().optional().describe("严格模式（自我一致性），不传走全局默认"),
+  text: z.string().min(1).max(MAX_INPUT_CHARS).describe("Text to verify"),
+  strict: z.boolean().optional().describe("Strict mode (self-consistency). Omit to use the global default."),
   domain,
   speed,
-  model: z.string().max(50).optional().describe("被测模型名（选填，分享卡片展示用）"),
+  model: z.string().max(50).optional().describe("Model name under test (optional; shown on the share card)"),
 };
 
 /** 2. verify_agent → POST /detect-agent （AgentDetectRequest, server.py:1254） */
 const agentStep = z
   .object({
-    step: z.number().int().optional().describe("步序号，默认 1"),
-    tool: z.string().optional().describe("该步调用的工具名"),
-    tool_input: z.string().optional().describe("工具输入"),
-    tool_output: z.string().optional().describe("工具输出"),
-    agent_claim: z.string().optional().describe("该步 agent 的声明"),
+    step: z.number().int().optional().describe("Step number (default: 1)"),
+    tool: z.string().optional().describe("Tool called in this step"),
+    tool_input: z.string().optional().describe("Tool input"),
+    tool_output: z.string().optional().describe("Tool output"),
+    agent_claim: z.string().optional().describe("The agent's claim for this step"),
   })
-  .describe("agent 轨迹单步");
+  .describe("A single agent trajectory step");
 
 export const verifyAgentSchema = {
   agent_output: z
     .string()
     .min(1)
     .max(50000)
-    .describe("agent 最终输出文本（≥1 字，≤50000 字）"),
-  steps: z.array(agentStep).optional().describe("agent 执行轨迹，逐步六维评估"),
-  task: z.string().optional().describe("原始任务指令（task_completion 裁判用）"),
+    .describe("The agent's final output text (1-50,000 characters)"),
+  steps: z.array(agentStep).optional().describe("Agent execution trajectory, graded step by step across six dimensions"),
+  task: z.string().optional().describe("Original task instruction (used by the task_completion judge)"),
   tool_schemas: z
     .record(z.string(), z.unknown())
     .optional()
-    .describe("工具 Schema（与 trajectory 端点对齐）"),
+    .describe("Tool schemas (aligned with the trajectory endpoint)"),
   domain,
   speed,
 };
@@ -57,74 +57,74 @@ export const verifyAgentSchema = {
 /** 3. check_cua_actions → POST /cua/classify （CuaClassifyRequest, server.py:2174） */
 const cuaAction = z
   .object({
-    action: z.string().optional().describe("动作名（click/press/hotkey/write/move…），省略则按坐标推断"),
-    x: z.number().optional().describe("坐标式点击 X"),
-    y: z.number().optional().describe("坐标式点击 Y"),
+    action: z.string().optional().describe("Action name (click/press/hotkey/write/move...); inferred from coordinates when omitted"),
+    x: z.number().optional().describe("X coordinate of the click"),
+    y: z.number().optional().describe("Y coordinate of the click"),
     coordinate: z
       .tuple([z.number().int(), z.number().int()])
       .optional()
-      .describe("[x, y] 二元组（与 x/y 二选一）"),
-    action_input: z.string().optional().describe("ReAct 形态输入别名 → text"),
-    text: z.string().optional().describe("type/key/paste 的内容"),
-    target_app: z.string().optional().describe("目标应用"),
-    app: z.string().optional().describe("target_app 别名"),
-    target_element: z.string().optional().describe("目标元素标签"),
-    element: z.string().optional().describe("target_element 别名"),
-    target_path: z.string().optional().describe("文件操作路径 / 终端命令路径"),
-    path: z.string().optional().describe("target_path 别名"),
-    target_url: z.string().optional().describe("浏览器动作的目标 URL（域名分级 / 未知域导航 / 粘贴到未知域规则用）"),
-    url: z.string().optional().describe("target_url 别名"),
-    thought: z.string().optional().describe("agent 推理文本（审计留痕）"),
+      .describe("[x, y] pair (alternative to x/y)"),
+    action_input: z.string().optional().describe("ReAct-style input alias -> text"),
+    text: z.string().optional().describe("Content for type/key/paste"),
+    target_app: z.string().optional().describe("Target application"),
+    app: z.string().optional().describe("Alias for target_app"),
+    target_element: z.string().optional().describe("Target element label"),
+    element: z.string().optional().describe("Alias for target_element"),
+    target_path: z.string().optional().describe("File operation path / terminal command path"),
+    path: z.string().optional().describe("Alias for target_path"),
+    target_url: z.string().optional().describe("Target URL of browser actions (used by domain grading, unknown-domain navigation and paste-into-unknown-domain rules)"),
+    url: z.string().optional().describe("Alias for target_url"),
+    thought: z.string().optional().describe("Agent reasoning text (audit trail)"),
     task_scope: z
       .object({
-        task: z.string().min(1).describe("声明的任务意图（如「整理本周会议纪要」）"),
-        allowed_apps: z.array(z.string()).optional().describe("允许的前台应用白名单"),
-        allowed_domains: z.array(z.string()).optional().describe("允许访问的域名白名单（后缀匹配含子域）"),
-        forbidden_elements: z.array(z.string()).optional().describe("禁止出现的元素标签（最高优先级）"),
+        task: z.string().min(1).describe("Declared task intent (for example, \"summarize this week's meeting notes\")"),
+        allowed_apps: z.array(z.string()).optional().describe("Allowed foreground applications"),
+        allowed_domains: z.array(z.string()).optional().describe("Allowed domains (suffix match, including subdomains)"),
+        forbidden_elements: z.array(z.string()).optional().describe("Forbidden element labels (highest priority)"),
       })
       .optional()
-      .describe("P1-5 任务允许范围声明（服务端按动作读取；越界升一级，只能收窄）"),
-    chain_id: z.string().optional().describe("P1-9 多智能体委托链 id（uuid hex）；给了则审计按 chain_id 跨会话聚合，可在 /cua/audit 看链路视图"),
-    agent_id: z.string().optional().describe("P1-9 本动作所属 Agent 名（如 research），配合 registered_agents 做注册校验"),
-    parent_agent_id: z.string().optional().describe("P1-9 委托方 Agent 名；跨 agent 边界的传播链由此配对"),
-    delegation_depth: z.number().int().min(0).optional().describe("P1-9 委托深度（根 Agent=0）；超 delegation_max_depth 升 L2"),
+      .describe("P1-5 Declared allowed task scope (read per action by the server; out of scope escalates one level and can only narrow)"),
+    chain_id: z.string().optional().describe("P1-9 Multi-agent delegation chain id (uuid hex); when provided, audit records aggregate across sessions by chain_id and a chain view is available at /cua/audit"),
+    agent_id: z.string().optional().describe("P1-9 Name of the agent this action belongs to (e.g. research); used with registered_agents for registration validation"),
+    parent_agent_id: z.string().optional().describe("P1-9 Name of the delegating agent; cross-agent propagation chains are paired with this"),
+    delegation_depth: z.number().int().min(0).optional().describe("P1-9 Delegation depth (root agent = 0); exceeding delegation_max_depth escalates to L2"),
   })
-  .describe("单条 CUA 动作");
+  .describe("A single CUA action");
 
 export const checkCuaActionsSchema = {
   actions: z
     .array(cuaAction)
     .min(1)
     .max(500)
-    .describe("待分级的动作序列（1~500 条）"),
+    .describe("Action sequence to grade (1-500 actions)"),
   session_id: z
     .string()
     .min(1)
     .max(64)
     .optional()
-    .describe("给了则把分级结果写入审计表，可在 /cua/audit 回放"),
+    .describe("When provided, grading results are written to the audit table and can be replayed at /cua/audit"),
   task_scope: z
     .object({
-      task: z.string().min(1).describe("声明的任务意图（如「整理本周会议纪要」）"),
-      allowed_apps: z.array(z.string()).optional().describe("允许的前台应用白名单"),
-      allowed_domains: z.array(z.string()).optional().describe("允许访问的域名白名单（后缀匹配含子域）"),
-      forbidden_elements: z.array(z.string()).optional().describe("禁止出现的元素标签（最高优先级）"),
+      task: z.string().min(1).describe("Declared task intent (for example, \"summarize this week's meeting notes\")"),
+      allowed_apps: z.array(z.string()).optional().describe("Allowed foreground applications"),
+      allowed_domains: z.array(z.string()).optional().describe("Allowed domains (suffix match, including subdomains)"),
+      forbidden_elements: z.array(z.string()).optional().describe("Forbidden element labels (highest priority)"),
     })
     .optional()
     .describe(
-      "任务意图对齐（收窄机制）：动作越出 scope 时升一级处置（L0→L1、L1→L2、L2 保持但追加原因、L3 不变）。只能升级不能降级；不传则零影响。",
+      "Task intent alignment (narrowing): actions outside the scope are handled one level higher (L0->L1, L1->L2, L2 stays but gains a reason, L3 unchanged). Escalation only, never a downgrade; omitted means no effect.",
     ),
 };
 
 /** 4. check_safety → POST /guard/check （GuardRequest, server.py:1756）；fast → /guard/check-fast */
 export const checkSafetySchema = {
-  prompt: z.string().max(50000).optional().describe("用户原始输入（默认空，≤50000 字）"),
-  output: z.string().min(1).max(50000).describe("AI 响应（≥1 字，≤50000 字）"),
-  check_hallucination: z.boolean().optional().describe("是否同时检测幻觉，默认 false"),
+  prompt: z.string().max(50000).optional().describe("Raw user input (default: empty; up to 50,000 characters)"),
+  output: z.string().min(1).max(50000).describe("AI response (1-50,000 characters)"),
+  check_hallucination: z.boolean().optional().describe("Also run hallucination detection (default: false)"),
   fast: z
     .boolean()
     .optional()
-    .describe("true 走纯规则快速模式（<10ms，无 LLM）→ /guard/check-fast；默认 false 走完整 /guard/check"),
+    .describe("true uses the rule-only fast mode (sub-10ms, no LLM) -> /guard/check-fast; the default false uses the full /guard/check"),
 };
 
 /** 5. check_cua_code_audit → POST /cua/audit-code：Agent 源码静态审计（纯规则，不耗额度）。 */
@@ -133,15 +133,15 @@ export const checkCuaCodeAuditSchema = {
     .string()
     .max(50000)
     .optional()
-    .describe("单文件模式：要扫描的源代码文本（≤50000 字符），与 files 二选一"),
+    .describe("Single-file mode: source code text to scan (up to 50,000 characters); mutually exclusive with files"),
   filename: z
     .string()
     .optional()
-    .describe("单文件模式：文件名，用于报告中标识（默认 input.py）"),
+    .describe("Single-file mode: filename used to identify the file in the report (default: input.py)"),
   language: z
     .enum(["auto", "python", "javascript", "typescript"])
     .optional()
-    .describe("语言提示，auto 时按 filename 扩展名推断（默认 auto）"),
+    .describe("Language hint; with auto it is inferred from the filename extension (default: auto)"),
   files: z
     .array(
       z.object({
@@ -151,7 +151,7 @@ export const checkCuaCodeAuditSchema = {
       }),
     )
     .optional()
-    .describe("多文件模式：[{path, content, language?}] 数组，与 code 二选一"),
+    .describe("Multi-file mode: array of [{path, content, language?}]; mutually exclusive with code"),
 };
 
 /* ------------------------------------------------------------------ */
@@ -350,38 +350,38 @@ export const checkAgentIceWallSchema = {
     .min(1)
     .max(128)
     .describe(
-      "会话 ID（由调用方自定并在整个 agent 会话内复用）：风险分按 session 累积，" +
-        "超阈值整场冻结。同一 agent 任务务必用同一个 ID，不同任务不要复用。",
+      "Session ID (caller-defined and reused across one agent session): the risk score accumulates per session, " +
+        "and exceeding the threshold freezes the entire run. Always reuse one ID for a single agent task; never reuse it across tasks.",
     ),
   step: z
     .object({
-      step: z.number().int().optional().describe("步序号"),
-      thought: z.string().optional().describe("该步思考"),
-      action: z.string().optional().describe("该步调用的工具/动作名"),
-      action_input: z.string().optional().describe("工具/动作输入"),
-      observation: z.string().optional().describe("工具/动作返回的观察"),
-      final_answer: z.string().optional().describe("最终回答（最后一步）"),
-      agent_claim: z.string().optional().describe("该步 agent 的声明（兼容 /detect-agent schema）"),
-      tool: z.string().optional().describe("工具名（兼容 /detect-agent schema）"),
-      tool_input: z.string().optional().describe("工具输入（兼容 /detect-agent schema）"),
-      tool_output: z.string().optional().describe("工具输出（兼容 /detect-agent schema）"),
+      step: z.number().int().optional().describe("Step number"),
+      thought: z.string().optional().describe("The step's reasoning"),
+      action: z.string().optional().describe("Tool/action name called in this step"),
+      action_input: z.string().optional().describe("Tool/action input"),
+      observation: z.string().optional().describe("Observation returned by the tool/action"),
+      final_answer: z.string().optional().describe("Final answer (last step)"),
+      agent_claim: z.string().optional().describe("The agent's claim for this step (compatible with the /detect-agent schema)"),
+      tool: z.string().optional().describe("Tool name (compatible with the /detect-agent schema)"),
+      tool_input: z.string().optional().describe("Tool input (compatible with the /detect-agent schema)"),
+      tool_output: z.string().optional().describe("Tool output (compatible with the /detect-agent schema)"),
     })
     .passthrough()
-    .describe("当前步（两种 schema 均兼容，服务端自动归一）"),
+    .describe("Current step (both schemas accepted; the server normalizes automatically)"),
   prior_steps: z
     .array(z.record(z.string(), z.unknown()))
     .optional()
-    .describe("前序步（同 schema），供循环/重试风暴等跨步检测"),
-  task: z.string().max(5000).optional().describe("原始任务指令（参数来源校验用）"),
+    .describe("Prior steps (same schema), used for cross-step detection such as loops and retry storms"),
+  task: z.string().max(5000).optional().describe("Original task instruction (used to validate parameter provenance)"),
   tool_schemas: z
     .record(z.string(), z.unknown())
     .optional()
-    .describe("工具注册表 {工具名: {required, properties}}；给了才启用捏造工具/参数 Schema 校验（这两项是零容忍熔断项）"),
+    .describe("Tool registry {toolName: {required, properties}}; provide it to enable fabricated-tool and parameter-schema validation (both are zero-tolerance fuse conditions)"),
 };
 
 /** 7. reset_agent_ice_wall → POST /icewall/reset */
 export const resetAgentIceWallSchema = {
-  session_id: z.string().min(1).max(128).describe("要解冻的会话 ID"),
+  session_id: z.string().min(1).max(128).describe("Session ID to unfreeze"),
 };
 
 const iceWallSession = z
@@ -410,7 +410,7 @@ export const checkAgentIceWallOutput = z
     action: z
       .enum(["allow", "warn", "block", "frozen"])
       .nullish()
-      .describe("客户端唯一需要看的字段：frozen=整场立即停机"),
+      .describe("The only field the client must read: frozen = halt the entire run immediately"),
     quota: z.unknown().nullish(),
   })
   .passthrough();

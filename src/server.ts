@@ -97,7 +97,7 @@ app.post("/mcp", async (req, res) => {
       res,
       401,
       -32001,
-      "未提供合法 API key：请在客户端配置 Authorization: Bearer <你的 HallucC key> 头（https://aihcc.cloud/keys 创建）",
+      "Missing a valid API key: configure the header Authorization: Bearer <your HallucC key> in your client (create one at https://aihcc.cloud/keys)",
     );
     return;
   }
@@ -116,7 +116,7 @@ app.post("/mcp", async (req, res) => {
       server.close().catch(() => {});
     });
   } catch (err) {
-    console.error(`[mcp] 请求处理失败: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`[mcp] request handling failed: ${err instanceof Error ? err.message : String(err)}`);
     jsonrpcError(
       res,
       500,
@@ -147,16 +147,16 @@ app.delete("/mcp", async (req, res) => {
 });
 
 app.listen(cfg.port, cfg.host, () => {
-  console.log(`[hallucc-mcp] 监听 http://${cfg.host}:${cfg.port}/mcp  →  后端 ${cfg.baseUrl}`);
+  console.log(`[hallucc-mcp] listening on http://${cfg.host}:${cfg.port}/mcp  ->  backend ${cfg.baseUrl}`);
   console.log(
-    `[hallucc-mcp] 工具：verify_text / verify_agent / check_cua_actions / check_cua_code_audit / check_safety`,
+    `[hallucc-mcp] tools: verify_text / verify_agent / check_cua_actions / check_cua_code_audit / check_safety`,
   );
-  console.log(`[hallucc-mcp] 鉴权：Authorization: Bearer <HallucC API key>（与 Web 端同源额度）`);
+  console.log(`[hallucc-mcp] auth: Authorization: Bearer <HallucC API key> (quota shared with the web app)`);
   console.log(
-    `[hallucc-mcp] 门禁：tools/call 等需格式合法的 key（hc_+48hex）；发现类方法` +
-      `${cfg.allowAnonDiscovery ? "开放" : "也需 key"}（initialize / tools/list / ping）`,
+    `[hallucc-mcp] gate: tools/call and similar require a well-formed key (hc_ + 48 hex); discovery methods` +
+      ` ${cfg.allowAnonDiscovery ? "are open" : "also require a key"} (initialize / tools/list / ping)`,
   );
   console.log(
-    `[hallucc-mcp] 访客上报：${visitorTarget.token ? "已启用 → " + cfg.baseUrl + "/visitor/report" : "未启用（VISITOR_REPORT_TOKEN 未设置）"}`,
+    `[hallucc-mcp] visitor reporting: ${visitorTarget.token ? "enabled -> " + cfg.baseUrl + "/visitor/report" : "disabled (VISITOR_REPORT_TOKEN not set)"}`,
   );
 });

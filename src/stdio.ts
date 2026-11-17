@@ -29,11 +29,11 @@ const apiKey = process.env.HALLUCC_API_KEY?.trim();
 if (!apiKey) {
   // 不再 exit(1)：允许「无鉴权」启动，便于工具列表/内省与目录站评估。
   console.error(
-    "[hallucc-mcp] 未检测到 HALLUCC_API_KEY：将以「未鉴权」模式启动。" +
-      "工具列表可用，但调用核验类工具会返回 401。\n" +
-      "正式使用请在客户端 mcp.json 的 env 中配置 HALLUCC_API_KEY" +
-      "（在 https://aihcc.cloud/keys 创建）：\n" +
-      '  "env": { "HALLUCC_API_KEY": "<你的 HallucC API key>" }',
+    "[hallucc-mcp] HALLUCC_API_KEY not found: starting in unauthenticated mode." +
+      "The tool list is available, but calling verification tools returns 401.\n" +
+      "For production use, set HALLUCC_API_KEY in your client mcp.json env" +
+      "(create one at https://aihcc.cloud/keys):\n" +
+      '  "env": { "HALLUCC_API_KEY": "<your HallucC API key>" }',
   );
 }
 
@@ -47,4 +47,4 @@ const cfg = {
 const server = buildServer(cfg, apiKey ?? "");
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error(`[${SERVER_NAME}] v${SERVER_VERSION} stdio 就绪 → 后端 ${cfg.baseUrl}`);
+console.error(`[${SERVER_NAME}] v${SERVER_VERSION} stdio ready -> backend ${cfg.baseUrl}`);

@@ -9,9 +9,10 @@ export function registerVerifyAgent(server: McpServer, backend: BackendClient): 
     {
       title: "Verify Agent",
       description:
-        "Agent 输出与轨迹自检。对最终回答跑逐声明幻觉核验，并对执行轨迹做六维结构化评估" +
-        "（事实性/来源/指令合规/工具声明一致/任务完成/反思）。返回 main.claims、" +
-        "steps[].checks、quota。耗 detect 额度。",
+        "Agent output and trajectory self-check. Runs claim-by-claim hallucination verification on the " +
+        "final answer and a six-dimension structured evaluation of the execution trajectory (factuality, " +
+        "sourcing, instruction compliance, tool-claim consistency, task completion, reflection). Returns " +
+        "main.claims, steps[].checks and quota. Consumes detect quota.",
       inputSchema: verifyAgentSchema,
       outputSchema: verifyAgentOutput,
       annotations: {
